@@ -54,3 +54,14 @@ exports.deleteMusic = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+
+exports.batchMusic = async (req, res) => {
+    const { songIds } = req.body;
+    try {
+      const songs = await Music .find({ _id: { $in: songIds } });
+      res.status(200).json(songs);
+    } catch (error) {
+      res.status(500).json({ error: 'Error fetching songs' });
+    }
+};

@@ -6,6 +6,7 @@ const musicSchema = new Schema({
   albumTitle: { type: String, required: true, trim: true },
   artist: { type: String, required: true, trim: true },
   songDuration: { type: String, required: true },
+  //songDuration: { type: Number, required: true },
   songPath: { type: String, required: true, trim: true },
   songPicturePath: { type: String, required: true, trim: true }
 });
