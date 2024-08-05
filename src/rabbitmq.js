@@ -11,10 +11,12 @@ amqp.connect(MQ_URI, (error0, connection) => {
         if (error1) {
             throw error1;
         }
+        console.log('Connected to RabbitMQ');
         channel = ch;
     });
 });
 
+// Function to publish a message to a queue
 const publishToQueue = async (queueName, data) => {
     if (!channel) {
         throw new Error("Channel is not created yet");
@@ -23,6 +25,7 @@ const publishToQueue = async (queueName, data) => {
     channel.sendToQueue(queueName, Buffer.from(JSON.stringify(data)), { persistent: true });
 };
 
+// Function to consume messages from a queue
 const consumeQueue = async (queueName, callback) => {
     if (!channel) {
         throw new Error("Channel is not created yet");
@@ -36,82 +39,56 @@ const consumeQueue = async (queueName, callback) => {
     });
 };
 
-module.exports = { publishToQueue, consumeQueue };
-
-// Communcation between music service and playlist service
-// Using RabbitMQ
-
-const amqp = require('amqplib');
-const Music = require('../models/music');
-
-let connection = null;
-
-exports.connectRabbitMQ = async () => {
-    try {
-        if (!connection) {
-            connection = await amqp.connect(process.env.MQ_URI || 'amqp://localhost:5672');
-        } 
-        if (!channel) {
-            channel = await connection.createChannel();
-        }
-        console.log("Connected to RabbitMQ")
-        return channel;
-
-    } catch(err) {
-        console.log("Error Connecting to RabbitMQ", err)
+// Function to subscribe to an exchange
+const subscribeToExchange = async (exchangeName, queueName, routingKey, callback) => {
+    if (!channel) {
+        throw new Error("Channel is not created yet");
     }
-}
 
-exports.sendMetaDataResponse = async() => {
-    const requestQueue = 'metadata_request_queue';
-    const responseQueue = 'metadata_response_queue';
-    
-    await channel.assertQueue(requestQueue, { durable: true });
-    
-    console.log(`Waiting for metadata requests in ${requestQueue}. To exit press CTRL+C`);
-    
-    channel.consume(requestQueue, async (message) => {
-        const { musicId, correlationId, replyTo } = JSON.parse(message.content.toString());
-        console.log(`Received metadata request for music ID: ${musicId}`);
-        
-        // Simulate metadata retrieval
-        const metadata = await getMusicMetadata(musicId);
-        
-        // Send metadata back to Playlist Service
-        channel.sendToQueue(replyTo, Buffer.from(JSON.stringify(metadata)), { correlationId });
-        
-        channel.ack(message);
-    }, { noAck: false });
-    
-    process.on('SIGINT', () => {
-        channel.close();
-        connection.close();
-    });
-}
+    // Declare an exchange
+    channel.assertExchange(exchangeName, 'fanout', { durable: false });
 
-async function getMusicMetadata(musicId) {
-    try {
-        // Assuming `musicId` is used to find the music document in MongoDB
-        const music = await Music.findById(musicId);
-
-        if (!music) {
-            throw new Error('Music not found');
+    // Declare a queue
+    channel.assertQueue(queueName, { exclusive: true }, (error, q) => {
+        if (error) {
+            throw error;
         }
+        
+        // Bind the queue to the exchange
+        channel.bindQueue(q.queue, exchangeName, routingKey);
+        
+        // Start consuming messages from the queue
+        channel.consume(q.queue, (msg) => {
+            if (msg !== null) {
+                callback(JSON.parse(msg.content.toString()));
+                channel.ack(msg);
+            }
+        }, { noAck: false });
 
-        return {
-            musicId: music._id,
-            title: music.songTitle,
-            artist: music.artist,
-            album: music.albumTitle,
-            duration: music.songDuration,
-            filePath: music.songPath,
-            picturePath: music.songPicturePath
-        };
-    } catch (err) {
-        console.error(`Error fetching music metadata: ${err.message}`);
-        // You can handle the error accordingly, e.g., return a default response or rethrow the error
-        throw err;
-    }   
-}
+        console.log(`Subscribed to exchange '${exchangeName}' with queue '${q.queue}' and routing key '${routingKey}'`);
+    });
+};
 
-module.exports = { connectRabbitMQ }
+module.exports = { publishToQueue, consumeQueue, subscribeToExchange };
+
+
+// For Controllers
+const publishNewSong = async (songData) => {
+    try {
+        await publishToQueue('song_releases', songData);
+        console.log(`Published new song release: ${songData.title}`);
+    } catch (error) {
+        console.error('Failed to publish message:', error);
+    }
+};
+
+const publishNewAlbum = async (albumData) => {
+    try {
+        await publishToQueue('album_releases', albumData);
+        console.log(`Published new song release: ${albumData.title}`);
+    } catch (error) {
+        console.error('Failed to publish message:', error);
+    }
+};
+
+module.exports = { publishNewSong, publishNewAlbum }
