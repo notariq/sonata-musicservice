@@ -9,8 +9,6 @@ const PORT = process.env.PORT || 4000;
 
 const DB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/music-sonata';
 
-app.disable('x-powered-by')
-
 app.use('/api/track', express.static(path.join(__dirname, '../../storage')));
 
 app.use(express.json());
