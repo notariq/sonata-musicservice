@@ -12,8 +12,8 @@ router.delete('/music/:id', musicController.deleteMusic);
 router.post('/music/batch', musicController.batchMusic);
 
 //Album
-router.get('/music/album', musicController.getAllAlbum);
-router.get('/music/album/:id', musicController.getAllAlbum);
+router.get('/music/album/all', musicController.getAllAlbum);
+router.get('/music/album/:id', musicController.getAlbumById);
 router.post('/music/album', musicController.createAlbum);
 
 //Streaming

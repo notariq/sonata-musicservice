@@ -4,7 +4,6 @@ const fs = require('fs');
 const streamAudio = (req, res) => {
     const filename = req.params.filename;
     const filePath = path.join(__dirname, '../../../storage', filename);
-    console.log(filePath)
   
     fs.access(filePath, fs.constants.F_OK, (err) => {
       if (err) {

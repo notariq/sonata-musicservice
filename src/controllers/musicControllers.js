@@ -6,7 +6,15 @@ const { Music, Album } = require('../models/music');
 //Music Controllers
 exports.getAllMusic = async (req, res) => {
     try {
-        const music = await Music.find();
+        const { query } = req.query;
+        const searchQuery = query ? {
+            $or: [
+                { title: new RegExp(query, 'i') },
+                { artist: new RegExp(query, 'i') }
+            ]
+        } : {};
+
+        const music = await Music.find(searchQuery);
         res.status(200).json(music);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -78,8 +86,23 @@ exports.deleteMusic = async (req, res) => {
 exports.batchMusic = async (req, res) => {
     const { id } = req.body;
     try {
-        const songs = await Music .find({ _id: { $in: id } });
-        res.status(200).json(songs);
+        const songs = await Music.find({ _id: { $in: id } })
+            .populate({
+                path: 'album',
+                select: 'title coverPath'
+            }).exec();
+
+        const resSongs = songs.map(music => ({
+            id: music._id,
+            title: music.title,
+            artist: music.artist,
+            duration: music.duration,
+            audioPath: music.audioPath,
+            coverPath: music.album?.coverPath || '', 
+            album: music.album?.title || '' 
+        }));
+
+        res.status(200).json(resSongs);
     } catch (error) {
         res.status(500).json({ error: 'Error fetching songs' });
     }
@@ -89,7 +112,7 @@ exports.batchMusic = async (req, res) => {
 exports.getAllAlbum = async (req, res) => {
     try {
         const album = await Album.find();
-        res.status(200).json(music);
+        res.status(200).json(album);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -99,7 +122,7 @@ exports.getAlbumById = async (req, res) => {
     try {
         const album = await Album.findById(req.params.id);
         if (!album) {
-            return res.status(404).json({ message: 'Music not found' });
+            return res.status(404).json({ message: 'Album not found' });
         };
         res.status(200).json(album);
     } catch (error) {
