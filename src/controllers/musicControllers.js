@@ -14,8 +14,19 @@ exports.getAllMusic = async (req, res) => {
             ]
         } : {};
 
-        const music = await Music.find(searchQuery);
-        res.status(200).json(music);
+        const musicRecords = await Music.find(searchQuery).populate('album'); // Populate to get album details
+
+        const formattedMusic = musicRecords.map(music => ({
+            id: music._id,
+            title: music.title,
+            artist: music.artist,
+            duration: music.duration,
+            audioPath: music.audioPath,
+            coverPath: music.album ? music.album.coverPath : null,
+            album: music.album ? music.album.title : null,
+        }));
+
+        res.status(200).json(formattedMusic);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

@@ -3,8 +3,9 @@ const fs = require('fs');
 
 const streamAudio = (req, res) => {
     const filename = req.params.filename;
-    const filePath = path.join(__dirname, '../../../storage', filename);
-  
+    //const filePath = path.join(__dirname, '../../../storage', filename); //development
+    const filePath = path.join('../../../../app/storage', filename);
+
     fs.access(filePath, fs.constants.F_OK, (err) => {
       if (err) {
         return res.status(404).send('File not found');
@@ -43,7 +44,8 @@ const streamAudio = (req, res) => {
   
   const streamImage = (req, res) => {
     const filename = req.params.filename;
-    const filePath = path.join(__dirname, '../../../storage', filename);
+    //const filePath = path.join(__dirname, '../../../storage', filename);
+    const filePath = path.join('../../../../app/storage', filename);
   
     fs.access(filePath, fs.constants.F_OK, (err) => {
       if (err) {
@@ -51,7 +53,7 @@ const streamAudio = (req, res) => {
       }
   
       const head = {
-        'Content-Type': 'image/jpeg' // Adjust based on your image format
+        'Content-Type': 'image/jpeg' 
       };
   
       res.writeHead(200, head);
