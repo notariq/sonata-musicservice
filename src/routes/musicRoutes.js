@@ -3,6 +3,7 @@ const router = express.Router();
 const musicController = require('../controllers/musicControllers');
 const streamController = require('../controllers/streamControllers');
 
+//Music
 router.get('/music', musicController.getAllMusic);
 router.get('/music/:id', musicController.getMusicById);
 router.post('/music', musicController.createMusic);

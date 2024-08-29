@@ -64,6 +64,7 @@ exports.createMusic = async (req, res) => {
     const music = new Music(req.body);
     try {
         const savedMusic = await music.save();
+        rabbitmq.publishToQueue('NEW_MUSIC', savedMusic);
         res.status(201).json(savedMusic);
     } catch (error) {
         res.status(400).json({ message: error.message });
